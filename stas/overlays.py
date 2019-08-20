@@ -4,9 +4,9 @@ import cv2
 def main_overlay(img, nfd, texp_us, gain, temp, settings):
     # Set exposure text
     if texp_us>=1000000:
-        text = "Exposure: %.3f s" % texp_us*1e-6
+        text = "Exposure: %.3f s" % (float(texp_us)*1e-6)
     elif (texp_us>=1000) & (texp_us<1000000):
-        text = "Exposure: %.3f ms" % (texp_us*1e-3)
+        text = "Exposure: %.3f ms" % (float(texp_us)*1e-3)
     elif texp_us<1000:
         text = "Exposure: %.3f us" % float(texp_us)
         

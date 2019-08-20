@@ -74,7 +74,15 @@ if __name__ == "__main__":
 
     # Stabilize
     stable = False
-    
+
+    # Open log file
+    logfile = os.path.join(path, "log.csv")
+    if not os.path.exists(logfile):
+        fstat = open(logfile, "w")
+        fstat.write("nfd,texp,gain,temp\n")
+    else:
+        fstat = open(logfile, "a")
+        
     # Initialize camera 0
     camera = asi.Camera(0)
     camera_info = camera.get_camera_property()
@@ -117,6 +125,17 @@ if __name__ == "__main__":
         gain = camera_settings["Gain"]
         temp = float(camera_settings["Temperature"])/10.0
 
+        # Format start time
+        nfd = "%s.%03d" % (time.strftime("%Y-%m-%dT%T",
+                           time.gmtime(t0)), int((t0-np.floor(t0))*1000))
+
+        print(nfd, texp, gain, temp)
+        
+        # Log
+        if stable:
+            fstat.write("%s,%f,%f,%f\n" % (nfd, texp, gain, temp))
+            fstat.flush()
+        
         # Exposure logic: change to auto gain if maximum exposure reached
         if (texp_us==texp_us_max) & (gain<gain_max) & (auto_gain==False) & (nighttime == False):
             auto_exp = False
@@ -133,12 +152,6 @@ if __name__ == "__main__":
             camera.set_control_value(asi.ASI_GAIN, gain_min, auto=auto_gain)
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto exposure!")
-
-        # Format start time
-        nfd = "%s.%03d" % (time.strftime("%Y-%m-%dT%T",
-                           time.gmtime(t0)), int((t0-np.floor(t0))*1000))
-
-        print(nfd, texp, gain, temp, nighttime, auto_exp, auto_gain)
         
         # Store FITS file
 #        if nighttime == True:
@@ -167,6 +180,13 @@ if __name__ == "__main__":
 
             # Compute sleep time
             tsleep = float(settings["daytimeDelay"])/1000.0-t1+t0
-            time.sleep(tsleep)
-        
+            try:
+                time.sleep(tsleep)
+            except KeyboardInterrupt:
+                break
+
+    # Stop capture
     camera.stop_video_capture()
+
+    # Close file
+    fstat.close()
