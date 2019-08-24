@@ -40,6 +40,8 @@ if __name__ == "__main__":
         
     # Check path
     path = os.path.abspath(args.path)
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     # Intialize SDK library
     try:
@@ -115,7 +117,7 @@ if __name__ == "__main__":
         # Get settings
         camera_settings = camera.get_control_values()
 
-        # Stability tet
+        # Stability test
         if texp_us == camera_settings["Exposure"] and gain == camera_settings["Gain"]:
             stable = True
 
@@ -141,6 +143,7 @@ if __name__ == "__main__":
             auto_exp = False
             auto_gain = True
             nighttime = True
+            stable = True
             camera.set_control_value(asi.ASI_GAIN, gain, auto=auto_gain)
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto gain!")
@@ -154,8 +157,8 @@ if __name__ == "__main__":
             print("Setting auto exposure!")
         
         # Store FITS file
-#        if nighttime == True:
-#            write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
+        if nighttime == True:
+            write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
             
         # Get RGB image
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BAYER_BG2BGR)
@@ -165,8 +168,9 @@ if __name__ == "__main__":
 
         # Store image
         if stable:
-            cv2.imwrite(os.path.join(path, settings["filename"]), rgb_img)
-            cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), rgb_img)
+            ny, nx = img.shape
+            cv2.imwrite(os.path.join(path, settings["filename"]), cv2.resize(rgb_img, (nx//2, ny//2)))
+            cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), cv2.resize(rgb_img, (nx//2, ny//2)))
         
         # Show image
         if live and stable:
@@ -180,10 +184,11 @@ if __name__ == "__main__":
 
             # Compute sleep time
             tsleep = float(settings["daytimeDelay"])/1000.0-t1+t0
-            try:
-                time.sleep(tsleep)
-            except KeyboardInterrupt:
-                break
+            if tsleep > 0.0:
+                try:
+                    time.sleep(tsleep)
+                except KeyboardInterrupt:
+                    break
 
     # Stop capture
     camera.stop_video_capture()
