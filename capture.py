@@ -57,11 +57,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Decode settings
-    if settings["autoexposure"] == "1":
+    if int(settings["autoexposure"]) == 1:
         auto_exp = True
     else:
         auto_exp = False
-    if settings["autogain"] == "1":
+    if int(settings["autogain"]) == 1:
         auto_gain = True
     else:
         auto_gain = False
