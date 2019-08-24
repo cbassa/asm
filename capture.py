@@ -7,8 +7,8 @@ import time
 import cv2
 import zwoasi as asi
 import numpy as np
-from stas.io import write_fits_file
-from stas.overlays import main_overlay
+from asm.io import write_fits_file
+from asm.overlays import main_overlay
 
 if __name__ == "__main__":
     # Parse arguments
