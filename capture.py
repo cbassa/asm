@@ -77,6 +77,9 @@ if __name__ == "__main__":
     # Stabilize
     stable = False
 
+    # Status
+    status = 0
+
     # Open log file
     logfile = os.path.join(path, "log.csv")
     if not os.path.exists(logfile):
@@ -139,7 +142,8 @@ if __name__ == "__main__":
             fstat.flush()
         
         # Exposure logic: change to auto gain if maximum exposure reached
-        if (texp_us==texp_us_max) & (gain<gain_max) & (auto_gain==False) & (nighttime == False):
+        if (texp_us==texp_us_max) & (gain<gain_max) & (auto_gain==False) & (status==0):
+            status = 1
             auto_exp = False
             auto_gain = True
             nighttime = True
@@ -147,8 +151,12 @@ if __name__ == "__main__":
             camera.set_control_value(asi.ASI_GAIN, gain, auto=auto_gain)
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto gain!")
+        # Increment status once gain has been adapted
+        elif (gain>gain_min) & (auto_exp==False) & (nighttime == True) & (status==1):
+            status = 2
         # Switch to auto exp if minimum gain reached
-        elif (gain==gain_min) & (auto_exp==False) & (nighttime == True):
+        elif (gain==gain_min) & (auto_exp==False) & (status == 2):
+            status = 0
             auto_exp = True
             auto_gain = False
             nighttime = False
