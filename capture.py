@@ -174,8 +174,8 @@ if __name__ == "__main__":
             print("Setting auto exposure!")
         
         # Store FITS file
-        #if nighttime == True:
-        write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
+        if nighttime == True:
+            write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
             
         # Get RGB image
         if int(settings["type"]) == asi.ASI_IMG_RAW8:
@@ -186,7 +186,8 @@ if __name__ == "__main__":
             rgb_img = img
         elif int(settings["type"]) == asi.ASI_IMG_RAW16:
             ny, nx = img.shape
-            rgb_img = cv2.cvtColor((img/256).astype("uint8"), cv2.COLOR_BAYER_BG2BGR)
+            img_8bit = np.clip((img/256).astype("uint8"), 0, 255)
+            rgb_img = cv2.cvtColor(img_8bit, cv2.COLOR_BAYER_BG2BGR)
 
         # Add overlay
         main_overlay(rgb_img, nfd, texp_us, gain, temp, settings)
