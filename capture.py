@@ -109,7 +109,16 @@ if __name__ == "__main__":
 
     # Start capture
     camera.start_video_capture()
-    camera.set_image_type(asi.ASI_IMG_RAW8)
+
+    # Set image format
+    if int(settings["type"]) == asi.ASI_IMG_RAW8:
+        camera.set_image_type(asi.ASI_IMG_RAW8)
+    elif int(settings["type"]) == asi.ASI_IMG_RGB24:
+        camera.set_image_type(asi.ASI_IMG_RGB24)
+    elif int(settings["type"]) == asi.ASI_IMG_RAW16:
+        camera.set_image_type(asi.ASI_IMG_RAW16)
+    else:
+        camera.set_image_type(asi.ASI_IMG_RAW8)
     
     # Forever loop
     while True:
@@ -165,24 +174,30 @@ if __name__ == "__main__":
             print("Setting auto exposure!")
         
         # Store FITS file
-        if nighttime == True:
-            write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
+        #if nighttime == True:
+        write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
             
         # Get RGB image
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BAYER_BG2BGR)
+        if int(settings["type"]) == asi.ASI_IMG_RAW8:
+            ny, nx = img.shape
+            rgb_img = cv2.cvtColor(img, cv2.COLOR_BAYER_BG2BGR)
+        elif int(settings["type"]) == asi.ASI_IMG_RGB24:
+            ny, nx, nc = img.shape
+            rgb_img = img
+        elif int(settings["type"]) == asi.ASI_IMG_RAW16:
+            ny, nx = img.shape
+            rgb_img = cv2.cvtColor((img/256).astype("uint8"), cv2.COLOR_BAYER_BG2BGR)
 
         # Add overlay
         main_overlay(rgb_img, nfd, texp_us, gain, temp, settings)
 
         # Store image
         if stable:
-            ny, nx = img.shape
             cv2.imwrite(os.path.join(path, settings["filename"]), cv2.resize(rgb_img, (nx//2, ny//2)))
             cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), cv2.resize(rgb_img, (nx//2, ny//2)))
         
         # Show image
         if live and stable:
-            ny, nx = img.shape
             cv2.imshow("Capture", cv2.resize(rgb_img, (nx//2, ny//2)))
             cv2.waitKey(1)
 

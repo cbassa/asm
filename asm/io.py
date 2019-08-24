@@ -4,9 +4,13 @@ from astropy.time import Time
 from astropy.io import fits
 
 def write_fits_file(fname, img, nfd, texp, gain, temp):
-    # Image shape
-    ny, nx = img.shape
-    
+    # Extract image shape and reorder in case of RGB24
+    if len(img.shape)==3:
+        ny, nx, nc = img.shape
+        img = np.moveaxis(img, 2, 0)
+    elif len(img.shape)==2:
+        ny, nx = img.shape
+        
     # FITS header
     hdr = fits.Header()
     hdr['DATE-OBS'] = "%s" % nfd
