@@ -17,30 +17,41 @@ def main_overlay(img, nfd, texp_us, gain, temp, settings):
 
     # Line types
     linetypes = [cv2.LINE_AA, 8, 4]
+
+    # Binning factor
+    nbin = int(settings["bin"])
     
     # Extract font settings
     fontname = fontnames[int(settings["fontname"])]
     fontcolor = tuple(int(s) for s in settings["fontcolor"].split(" "))
     smallfontcolor = tuple(int(s) for s in settings["smallfontcolor"].split(" "))
-    fontsize = float(settings["fontsize"])
+    fontsize = float(settings["fontsize"])/float(nbin)
     fonttype = linetypes[int(settings["fonttype"])]
-    fontline = int(settings["fontline"])
+    fontline = int(settings["fontline"])//nbin
     
-    # Add text
-    x0, y0 = int(settings["textx"]), int(settings["texty"])
+    # Text position
+    x0, y0 = int(settings["textx"])//nbin, int(settings["texty"])//nbin
     yoff = int(30.0*fontsize/0.7)
 
+    # Add freeform text
     cv2.putText(img, settings["text"], (x0, y0),
                 fontname, fontsize, fontcolor, fontline, fonttype)
+
+    # Add date
     if int(settings["time"]) == 1:
-        cv2.putText(img, nfd, (x0, y0+yoff),
+        y0 += yoff
+        cv2.putText(img, nfd, (x0, y0),
                     fontname, fontsize, fontcolor, fontline, fonttype)
+    # Add details
     if int(settings["showDetails"]) == 1:
-        cv2.putText(img, "Temperature: %.1f C" % temp, (x0, y0+2*yoff),
+        y0 += yoff
+        cv2.putText(img, "Temperature: %.1f C" % temp, (x0, y0),
                     fontname, 0.8*fontsize, smallfontcolor, fontline, fonttype)
-        cv2.putText(img, text, (x0, y0+3*yoff),
+        y0 += yoff
+        cv2.putText(img, text, (x0, y0),
                     fontname, 0.8*fontsize, smallfontcolor, fontline, fonttype)
-        cv2.putText(img, "Gain: %d" % gain, (x0, y0+4*yoff),
+        y0 += yoff
+        cv2.putText(img, "Gain: %d" % gain, (x0, y0),
                     fontname, 0.8*fontsize, smallfontcolor, fontline, fonttype)
 
     return

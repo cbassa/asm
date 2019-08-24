@@ -105,7 +105,7 @@ if __name__ == "__main__":
     camera.set_control_value(asi.ASI_FLIP, int(settings["flip"]))
     camera.set_control_value(asi.ASI_AUTO_MAX_BRIGHTNESS, 80)
     camera.disable_dark_subtract()
-    camera.set_roi(bins=1)
+    camera.set_roi(bins=int(settings["bin"]))
 
     # Start capture
     camera.start_video_capture()
