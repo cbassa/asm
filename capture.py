@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--settings", help="JSON file with settings", default=None)
     parser.add_argument("-p", "--path", help="Output path", default=None)
     parser.add_argument("-l", "--live", help="Display live view", action="store_true")
+    parser.add_argument("-b", "--nbin", help="Binning factor for output images [default: 1]", type=int, default=1)
     args = parser.parse_args()
 
     # Check arguments
@@ -43,6 +44,12 @@ if __name__ == "__main__":
     if not os.path.exists(path):
         os.makedirs(path)
 
+    # Check binning factor
+    if (args.nbin < 0):
+        nbin = 1
+    else:
+        nbin = args.nbin
+        
     # Intialize SDK library
     try:
         asi.init(os.getenv("ZWO_ASI_LIB"))
@@ -165,13 +172,16 @@ if __name__ == "__main__":
             status = 2
         # Switch to auto exp if minimum gain reached
         elif (gain==gain_min) & (auto_exp==False) & (status == 2):
-            status = 0
+            status = 3
             auto_exp = True
             auto_gain = False
             nighttime = False
             camera.set_control_value(asi.ASI_GAIN, gain_min, auto=auto_gain)
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto exposure!")
+        # Increment status once exposure has been adapted
+        elif (texp_us<texp_us_max) & (auto_gain==False) & (status==3):
+            status = 0
         
         # Store FITS file
         if nighttime == True:
@@ -192,14 +202,18 @@ if __name__ == "__main__":
         # Add overlay
         main_overlay(rgb_img, nfd, texp_us, gain, temp, settings)
 
+        # Bin output image
+        if nbin > 1:
+            rgb_img = cv2.resize(rgb_img, (nx//nbin, ny//nbin))
+
         # Store image
         if stable:
-            cv2.imwrite(os.path.join(path, settings["filename"]), cv2.resize(rgb_img, (nx//2, ny//2)))
-            cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), cv2.resize(rgb_img, (nx//2, ny//2)))
+            cv2.imwrite(os.path.join(path, settings["filename"]), rgb_img)
+            cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), rgb_img)
         
         # Show image
-        if live and stable:
-            cv2.imshow("Capture", cv2.resize(rgb_img, (nx//2, ny//2)))
+        if live:
+            cv2.imshow("Capture", rgb_img)
             cv2.waitKey(1)
 
         # Execute daytime sleep
