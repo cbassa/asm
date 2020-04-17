@@ -16,8 +16,9 @@ if __name__ == "__main__":
         description="Capture all sky images from an ASI camera.")
     parser.add_argument("-s", "--settings", help="JSON file with settings", default=None)
     parser.add_argument("-p", "--path", help="Output path", default=None)
+    parser.add_argument("-P", "--livepath", help="Output path for live image", default=None)
     parser.add_argument("-l", "--live", help="Display live view", action="store_true")
-    parser.add_argument("-b", "--nbin", help="Binning factor for output images [default: 1]", type=int, default=1)
+    parser.add_argument("-b", "--nbin", help="Binning factor for output JPG images [default: 1]", type=int, default=1)
     parser.add_argument("-n", "--night", help="Start with night time settings [default: false]", action="store_true")
     args = parser.parse_args()
 
@@ -46,10 +47,13 @@ if __name__ == "__main__":
     else:
         night = False
         
-    # Check path
+    # Check paths
     path = os.path.abspath(args.path)
     if not os.path.exists(path):
         os.makedirs(path)
+    livepath = os.path.abspath(args.livepath)
+    if not os.path.exists(livepath):
+        os.makedirs(livepath)
 
     # Check binning factor
     if (args.nbin < 0):
@@ -79,8 +83,8 @@ if __name__ == "__main__":
         auto_gain = True
     else:
         auto_gain = False
-    texp_us = 1000*int(settings["exposure"])
-    texp_us_max = 1000*int(settings["maxexposure"])
+    texp_us = 1000 * int(settings["exposure"])
+    texp_us_max = 1000 * int(settings["maxexposure"])
     gain = int(settings["gain"])
     gain_max = int(settings["maxgain"])
     gain_min = 0
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     # Set control values
     camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, int(settings["usb"]))
     camera.set_control_value(asi.ASI_EXPOSURE, texp_us, auto=auto_exp)
-    camera.set_control_value(asi.ASI_AUTO_MAX_EXP, texp_us_max//1000)
+    camera.set_control_value(asi.ASI_AUTO_MAX_EXP, texp_us_max // 1000)
     camera.set_control_value(asi.ASI_GAIN, gain, auto=auto_gain)
     camera.set_control_value(asi.ASI_AUTO_MAX_GAIN, gain_max)
     camera.set_control_value(asi.ASI_WB_B, int(settings["wbb"]))
@@ -159,7 +163,7 @@ if __name__ == "__main__":
 
         # Extract settings
         texp_us = camera_settings["Exposure"]
-        texp = float(texp_us)/1000000
+        texp = float(texp_us) / 1000000
         gain = camera_settings["Gain"]
         temp = float(camera_settings["Temperature"])/10.0
 
@@ -175,7 +179,7 @@ if __name__ == "__main__":
             fstat.flush()
         
         # Exposure logic: change to auto gain if maximum exposure reached
-        if (texp_us==texp_us_max) & (gain<gain_max) & (auto_gain==False) & (status==0):
+        if (texp_us == texp_us_max) & (gain < gain_max) & (auto_gain == False) & (status == 0):
             status = 1
             auto_exp = False
             auto_gain = True
@@ -185,10 +189,10 @@ if __name__ == "__main__":
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto gain!")
         # Increment status once gain has been adapted
-        elif (gain>gain_min) & (auto_exp==False) & (nighttime == True) & (status==1):
+        elif (gain > gain_min) & (auto_exp == False) & (nighttime == True) & (status == 1):
             status = 2
         # Switch to auto exp if minimum gain reached
-        elif (gain==gain_min) & (auto_exp==False) & (status == 2):
+        elif (gain == gain_min) & (auto_exp == False) & (status == 2):
             status = 3
             auto_exp = True
             auto_gain = False
@@ -197,7 +201,7 @@ if __name__ == "__main__":
             camera.set_control_value(asi.ASI_EXPOSURE, texp_us_max, auto=auto_exp)
             print("Setting auto exposure!")
         # Increment status once exposure has been adapted
-        elif (texp_us<texp_us_max) & (auto_gain==False) & (status==3):
+        elif (texp_us < texp_us_max) & (auto_gain == False) & (status == 3):
             status = 0
         
         # Store FITS file
@@ -222,11 +226,11 @@ if __name__ == "__main__":
         # Bin output image
         if nbin > 1:
             ny, nx, nz = rgb_img.shape
-            rgb_img = cv2.resize(rgb_img, (nx//nbin, ny//nbin))
+            rgb_img = cv2.resize(rgb_img, (nx // nbin, ny // nbin))
 
         # Store image
         if stable:
-            cv2.imwrite(os.path.join(path, settings["filename"]), rgb_img)
+            cv2.imwrite(os.path.join(livepath, settings["filename"]), rgb_img)
             cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), rgb_img)
         
         # Show image
@@ -239,7 +243,7 @@ if __name__ == "__main__":
             t1 = time.time()
 
             # Compute sleep time
-            tsleep = float(settings["daytimeDelay"])/1000.0-t1+t0
+            tsleep = float(settings["daytimeDelay"]) / 1000.0 - t1 + t0
             if tsleep > 0.0:
                 try:
                     time.sleep(tsleep)
