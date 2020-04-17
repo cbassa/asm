@@ -3,7 +3,7 @@ import numpy as np
 from astropy.time import Time
 from astropy.io import fits
 
-def write_fits_file(fname, img, nfd, texp, gain, temp):
+def write_fits_file(fname, img, nfd, texp, gain, temp, compress=True):
     # Extract image shape and reorder in case of RGB24
     if len(img.shape)==3:
         ny, nx, nc = img.shape
@@ -34,6 +34,10 @@ def write_fits_file(fname, img, nfd, texp, gain, temp):
     hdr['CRRES2'] = 0.0
     hdr['EQUINOX'] = 2000.0
     hdr['RADECSYS'] = "ICRS"
+
+    # Compress file
+    if compress:
+        fname = fname + ".gz"
     
     # Write FITS file
     hdu = fits.PrimaryHDU(data=img,
