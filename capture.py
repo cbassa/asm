@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--path", help="Output path", default=None)
     parser.add_argument("-l", "--live", help="Display live view", action="store_true")
     parser.add_argument("-b", "--nbin", help="Binning factor for output images [default: 1]", type=int, default=1)
+    parser.add_argument("-n", "--night", help="Start with night time settings [default: false]", action="store_true")
     args = parser.parse_args()
 
     # Check arguments
@@ -38,6 +39,12 @@ if __name__ == "__main__":
         live = True
     else:
         live = False
+
+    # Night
+    if args.night:
+        night = True
+    else:
+        night = False
         
     # Check path
     path = os.path.abspath(args.path)
@@ -87,6 +94,16 @@ if __name__ == "__main__":
     # Status
     status = 0
 
+    # Set nighttime
+    if night:
+        texp_us = texp_us_max
+        gain = gain_max
+        status = 2
+        auto_exp = False
+        auto_gain = True
+        nighttime = True
+        stable = True
+    
     # Open log file
     logfile = os.path.join(path, "log.csv")
     if not os.path.exists(logfile):
@@ -132,7 +149,7 @@ if __name__ == "__main__":
         # Capture frame
         t0 = time.time()
         img = camera.capture_video_frame()
-        
+
         # Get settings
         camera_settings = camera.get_control_values()
 
@@ -150,7 +167,7 @@ if __name__ == "__main__":
         nfd = "%s.%03d" % (time.strftime("%Y-%m-%dT%T",
                            time.gmtime(t0)), int((t0-np.floor(t0))*1000))
 
-        print(nfd, texp, gain, temp)
+        print(nfd, texp, gain, temp, status, auto_exp, auto_gain, nighttime, stable)
         
         # Log
         if stable:
@@ -189,21 +206,22 @@ if __name__ == "__main__":
             
         # Get RGB image
         if int(settings["type"]) == asi.ASI_IMG_RAW8:
-            ny, nx = img.shape
             rgb_img = cv2.cvtColor(img, cv2.COLOR_BAYER_BG2BGR)
         elif int(settings["type"]) == asi.ASI_IMG_RGB24:
-            ny, nx, nc = img.shape
             rgb_img = img
         elif int(settings["type"]) == asi.ASI_IMG_RAW16:
-            ny, nx = img.shape
             img_8bit = np.clip((img/256).astype("uint8"), 0, 255)
             rgb_img = cv2.cvtColor(img_8bit, cv2.COLOR_BAYER_BG2BGR)
 
+        # Rotate
+        #rgb_img = cv2.rotate(rgb_img, cv2.ROTATE_90_CLOCKWISE)
+
         # Add overlay
         main_overlay(rgb_img, nfd, texp_us, gain, temp, settings)
-
+      
         # Bin output image
         if nbin > 1:
+            ny, nx, nz = rgb_img.shape
             rgb_img = cv2.resize(rgb_img, (nx//nbin, ny//nbin))
 
         # Store image
