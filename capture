@@ -167,7 +167,7 @@ if __name__ == "__main__":
     while True:
         # Capture frame
         t0 = time.time()
-        img = capture.capture()
+        img = camera.capture()
 
         # Get settings
         camera_settings = camera.get_control_values()
