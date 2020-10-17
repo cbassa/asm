@@ -46,11 +46,20 @@ if __name__ == "__main__":
         night = True
     else:
         night = False
+
+    # Set dirname
+    dirname = time.strftime("%Y%m%d", time.gmtime())
         
     # Check paths
-    path = os.path.abspath(args.path)
+    path = os.path.abspath(os.path.join(args.path, dirname))
     if not os.path.exists(path):
         os.makedirs(path)
+    fitspath = os.path.abspath(os.path.join(path, "fits"))
+    if not os.path.exists(fitspath):
+        os.makedirs(fitspath)
+    daypath = os.path.abspath(os.path.join(path, "day"))
+    if not os.path.exists(daypath):
+        os.makedirs(daypath)
     livepath = os.path.abspath(args.livepath)
     if not os.path.exists(livepath):
         os.makedirs(livepath)
@@ -206,7 +215,7 @@ if __name__ == "__main__":
         
         # Store FITS file
         if nighttime == True:
-            write_fits_file(os.path.join(path, "%s.fits" % nfd), img, nfd, texp, gain, temp)
+            write_fits_file(os.path.join(fitspath, "%s.fits" % nfd), img, nfd, texp, gain, temp)
             
         # Get RGB image
         if int(settings["type"]) == asi.ASI_IMG_RAW8:
@@ -231,8 +240,12 @@ if __name__ == "__main__":
         # Store image
         if stable:
             cv2.imwrite(os.path.join(livepath, settings["filename"]), rgb_img)
-            cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), rgb_img)
-        
+            cv2.imwrite(os.path.join(livepath, "liveview-image.jpg"), rgb_img)
+            if nighttime:
+                cv2.imwrite(os.path.join(path, "%s.jpg" % nfd), rgb_img)
+            else:
+                cv2.imwrite(os.path.join(daypath, "%s.jpg" % nfd), rgb_img)
+                
         # Show image
         if live:
             cv2.imshow("Capture", rgb_img)
