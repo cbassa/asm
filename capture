@@ -144,8 +144,14 @@ if __name__ == "__main__":
     camera.disable_dark_subtract()
     camera.set_roi(bins=int(settings["bin"]))
 
-    # Start capture
-    camera.start_video_capture()
+    # Force any single exposure to be halted
+    try:
+        camera.stop_video_capture()
+        camera.stop_exposure()
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        pass
 
     # Set image format
     if int(settings["type"]) == asi.ASI_IMG_RAW8:
@@ -161,7 +167,7 @@ if __name__ == "__main__":
     while True:
         # Capture frame
         t0 = time.time()
-        img = camera.capture_video_frame()
+        img = capture.capture()
 
         # Get settings
         camera_settings = camera.get_control_values()
